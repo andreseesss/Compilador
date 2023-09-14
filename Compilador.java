@@ -37,9 +37,9 @@ public class Compilador extends javax.swing.JFrame {
     private ArrayList<Token> tokens;
     private ArrayList<ErrorLSSL> errors;
     private ArrayList<TextColor> textsColor;
-    private Timer timerKeyReleased;
-    private ArrayList<Production> identProd;
-    private HashMap<String, String> identificadores;
+    private Timer timerKeyReleased;// funcion para colorear palabras de codigo
+    private ArrayList<Production> identProd;// identificadores sintaxis
+    private HashMap<String, String> identificadores;//
     private boolean codeHasBeenCompiled = false;
 
     /**
@@ -51,10 +51,10 @@ public class Compilador extends javax.swing.JFrame {
     }
 
     private void init() {
-        title = "Compiler";
+        title = "Compiler";// nombre compiladore
         setLocationRelativeTo(null);
         setTitle(title);
-        directorio = new Directory(this, jtpCode, title, ".comp");
+        directorio = new Directory(this, jtpCode, title, ".comp");// 4to extencion archivhos de codigo
         addWindowListener(new WindowAdapter() {// Cuando presiona la "X" de la esquina superior derecha
             @Override
             public void windowClosing(WindowEvent e) {
@@ -62,20 +62,21 @@ public class Compilador extends javax.swing.JFrame {
                 System.exit(0);
             }
         });
-        Functions.setLineNumberOnJTextComponent(jtpCode);
-        timerKeyReleased = new Timer((int) (1000 * 0.3), (ActionEvent e) -> {
+        Functions.setLineNumberOnJTextComponent(jtpCode);//
+        timerKeyReleased = new Timer((int) (1000 * 0.3), (ActionEvent e) -> {// timer para escribir
             timerKeyReleased.stop();
-            colorAnalysis();
+            colorAnalysis();// funcion
         });
-        Functions.insertAsteriskInName(this, jtpCode, () -> {
+        Functions.insertAsteriskInName(this, jtpCode, () -> {// editor añade el asterisco a linea editada
             timerKeyReleased.restart();
         });
+        // inciamos nuestros arraylist vacios
         tokens = new ArrayList<>();
         errors = new ArrayList<>();
         textsColor = new ArrayList<>();
         identProd = new ArrayList<>();
         identificadores = new HashMap<>();
-        Functions.setAutocompleterJTextComponent(new String[] {}, jtpCode, () -> {
+        Functions.setAutocompleterJTextComponent(new String[] {}, jtpCode, () -> {// auto completador
             timerKeyReleased.restart();
         });
     }
@@ -327,7 +328,7 @@ public class Compilador extends javax.swing.JFrame {
         }
     }// GEN-LAST:event_btnEjecutarActionPerformed
 
-    private void compile() {
+    private void compile() {// limpiar campos y metodos de analisis
         clearFields();
         lexicalAnalysis();
         fillTableTokens();
@@ -339,13 +340,15 @@ public class Compilador extends javax.swing.JFrame {
 
     private void lexicalAnalysis() {
         // Extraer tokens
+
         Lexer lexer;
         try {
             File codigo = new File("code.encrypter");
             FileOutputStream output = new FileOutputStream(codigo);
+            // bytes del texto
             byte[] bytesText = jtpCode.getText().getBytes();
             output.write(bytesText);
-            BufferedReader entrada = new BufferedReader(new InputStreamReader(new FileInputStream(codigo), "UTF8"));
+            BufferedReader entrada = new BufferedReader(new InputStreamReader(new FileInputStream(codigo), "UTF-8"));
             lexer = new Lexer(entrada);
             while (true) {
                 Token token = lexer.yylex();
@@ -375,6 +378,7 @@ public class Compilador extends javax.swing.JFrame {
         /* Limpiar el arreglo de colores */
         textsColor.clear();
         /* Extraer rangos de colores */
+
         LexerColor lexerColor;
         try {
             File codigo = new File("color.encrypter");
@@ -398,7 +402,7 @@ public class Compilador extends javax.swing.JFrame {
         Functions.colorTextPane(textsColor, jtpCode, new Color(40, 40, 40));
     }
 
-    private void fillTableTokens() {
+    private void fillTableTokens() {// recorrer tokens pos 1 comp lexico,2 pos lexema. 3 linea y columna
         tokens.forEach(token -> {
             Object[] data = new Object[] { token.getLexicalComp(), token.getLexeme(),
                     "[" + token.getLine() + ", " + token.getColumn() + "]" };
@@ -406,17 +410,19 @@ public class Compilador extends javax.swing.JFrame {
         });
     }
 
-    private void printConsole() {
+    private void printConsole() {// para mostrar errores
         int sizeErrors = errors.size();
         if (sizeErrors > 0) {
-            Functions.sortErrorsByLineAndColumn(errors);
+            Functions.sortErrorsByLineAndColumn(errors);// organiza errores por linea y colum
             String strErrors = "\n";
             for (ErrorLSSL error : errors) {
-                String strError = String.valueOf(error);
+                String strError = String.valueOf(error); // obtiene cadena de error
                 strErrors += strError + "\n";
             }
             jtaOutputConsole
-                    .setText("Compilación terminada...\n" + strErrors + "\nLa compilación terminó con errores...");
+                    .setText("Compilación terminada...\n" + strErrors + "\nLa compilación terminó con errores...");// minimo
+                                                                                                                   // 1
+                                                                                                                   // error
         } else {
             jtaOutputConsole.setText("Compilación terminada...");
         }
@@ -424,7 +430,7 @@ public class Compilador extends javax.swing.JFrame {
     }
 
     private void clearFields() {
-        Functions.clearDataInTable(tblTokens);
+        Functions.clearDataInTable(tblTokens);// limpiar datos tabla de tokens
         jtaOutputConsole.setText("");
         tokens.clear();
         errors.clear();
