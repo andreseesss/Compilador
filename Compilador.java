@@ -26,10 +26,6 @@ import java.util.HashMap;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
 
-/**
- *
- * @author yisus
- */
 public class Compilador extends javax.swing.JFrame {
 
     private String title;
@@ -43,7 +39,7 @@ public class Compilador extends javax.swing.JFrame {
     private boolean codeHasBeenCompiled = false;
 
     /**
-     * Creates new form Compilador
+     * new Compilador
      */
     public Compilador() {
         initComponents();
@@ -366,9 +362,70 @@ public class Compilador extends javax.swing.JFrame {
 
     private void syntacticAnalysis() {
         Grammar gramatica = new Grammar(tokens, errors);
+        /* Eliminar los errores */
+        gramatica.delete(new String[] { "ERROR", "ERROR_1", "ERROR_2" });
 
+        /* Agrupacion de valores */
+        gramatica.group("VALOR", "(NUMERO|COLOR)", true);
+        /* Variables */
+        gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true);
+        gramatica.group("VARIABLE", "TIPO_DATO OP_ASIG VALOR", true,
+                2, "ERROR, falta Identificador de variable [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("VARIABLE", "TIPO_DATO OP_ASIG IDENTIFICADOR", true,
+                3, "ERROR, falta valor de variable [#,%]");
+
+        /* ELiminacion de tipos de dato y operadores de asig */
+        gramatica.delete("TIPO_DATO", 4, "ERROR,Tipo de dato no pertenece a declaracion [#,%]");
+        gramatica.delete("OP_ASIG", 5, "ERROR,Tipo de asignacion no pertenece a declaracion [#,%]");
+
+        /* Agrupar identificadores como un valor */
+        gramatica.group("VALOR", "IDENTIFICADOR", true);
+        gramatica.group("PARAMETROS", "VALOR (COMA VALOR)+");
+
+        /* Agrupacion de funciones */
+        // FUNCIONES DEFINIRLAS gramatica.group("FUNCION","(fun1|fun2)",true);
+        // FUNCION QUE PERTENECE a ()
+        gramatica.group("FUN_COMPLET", "FUNCION PARENTESIS_OPEN (VALOR|PARENTESIS)? PARENTESIS_CLOSE", true);
+        // usuario no tiene ( que abre
+        gramatica.group("FUN_COMPLET", "FUNCION PARENTESIS_OPEN (VALOR|PARENTESIS)? ", true, 6,
+                "ERROR, falta Parentesis (");
+        gramatica.group("FUN_COMPLET", "FUNCION (VALOR|PARENTESIS) PARENTESIS_CLOSE", true, 7,
+                "ERROR, falta Parentesis )");
+        gramatica.initialLineColumn();
+
+        /* ELimacion de funciones que no sirven */
+        gramatica.delete("FUNCION", 8, "ERROR,FUNCION declaracion incorrecta");
+
+        /* EXPRESIONES LOGICAS */
+        gramatica.loopForFunExecUntilChangeNotDetected(() -> {
+            gramatica.group("EXP_LOG", "(FUN_COMPLET | EXP_LOG) (OP_LOGICO (FUN_COMPLET|EXP_LOG))+");
+            gramatica.group("EXP_LOG", "PARENTESIS_OPEN (EXP_LOG | FUN_COMPLET) PARENTESIS_CLOSE)+");
+        });
+        /* ELIMINACION DE EXPRESIONEs */
+        gramatica.delete("OP_LOGICO", 10, "ERROR, operador logico no pertenece a una expresion");
+
+        /* Agrupacion expresiones logicas, valor y parametro */
+        gramatica.group("VALOR", "EXP_LOG");
+        gramatica.group("PARAMETROS", "VALOR (COMA VALOR)+");
+
+        /* AGrupacion de estructuras de control */
+        gramatica.group("EST_CONTROL", "(REPETIR  ESTRUCTURA_SI)");
+        gramatica.group("EST_CONTROL_COMP", "EST_CONTROL_PARENTESIS_O PARENTESIS_C");
+        gramatica.group("EST_CONTROL", "EST_CONTROL (VALOR | PARAMETROS)");
+        gramatica.group("EST_CONTROL_COMP", "EST_CONTROL_PARENTESIS_O (VALOR | PARAMETROS) PARENTESIS_C");
+        /** AGREAGAR LOGICA PARA PARENTESIS QUE ABREN Y CIERRA LINEA 389 */
+
+        /* Eliminacion estr control */
+        gramatica.delete("EST_CONTROL", 11, "ERROR estructura incompleta [#,%]");
+        gramatica.delete(
+                new String[] { "PARENTESIS_O", "PARENTESIS_C" }, 12,
+                "EROR en la declaracion del parentesis Linea [#,%]");
+
+        gramatica.initialLineColumn();
         /* Mostrar gramáticas */
         gramatica.show();
+
     }
 
     private void semanticAnalysis() {
