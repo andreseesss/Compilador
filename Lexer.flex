@@ -109,8 +109,8 @@ __LINE__ {return token(yytext(), "RESERVADAS", yyline, yycolumn);}
 /*Operadores de agrupacion*/
 "("{return token(yytext(), "PARENTESIS_OPEN", yyline, yycolumn);}
 ")" {return token(yytext(), "PARENTESIS_CLOSE", yyline, yycolumn);}
-"{"{return token(yytext(), "LLAVE OPEN", yyline, yycolumn);}
-"}" {return token(yytext(), "LLAVE CLOSE", yyline, yycolumn);}
+"{"{return token(yytext(), "LLAVE_O", yyline, yycolumn);}
+"}" {return token(yytext(), "LLAVE_C", yyline, yycolumn);}
 
 /*Signos de Puntuacion*/
 ","{return token(yytext(), "COMA", yyline, yycolumn);}

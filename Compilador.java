@@ -367,8 +367,9 @@ public class Compilador extends javax.swing.JFrame {
 
         /* Agrupacion de valores */
         gramatica.group("VALOR", "(NUMERO|COLOR)", true);
+
         /* Variables */
-        gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true);
+        gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true, identProd);
         gramatica.group("VARIABLE", "TIPO_DATO OP_ASIG VALOR", true,
                 2, "ERROR, falta Identificador de variable [#,%]");
         gramatica.finalLineColumn();
@@ -421,14 +422,72 @@ public class Compilador extends javax.swing.JFrame {
         gramatica.delete(
                 new String[] { "PARENTESIS_O", "PARENTESIS_C" }, 12,
                 "EROR en la declaracion del parentesis Linea [#,%]");
+        gramatica.finalLineColumn();
+
+        /* Verificación de punto y coma al final de la sentencia */
+        // Identificadores
+        gramatica.group("VARIABLE_PC", "VARIABLE PUNTO_COMA", true);
+        gramatica.group("VARIABLE_PC", "VARIABLE", true,
+                18, " Error sintáctico {}: falta el punto y coma al final de la declaración de variable [#, %]");
+        // Funciones
+        gramatica.group("FUNCION_COMP_PC", "FUNCION_COMP PUNTO_COMA", true);
+        gramatica.group("FUNCION_COMP_PC", "FUNCION_COMP", true,
+                19, " Error sintáctico {}: falta el punto y coma al final de la declaración de función [#, %]");
 
         gramatica.initialLineColumn();
+
+        /* Eliminación de punto y coma */
+        gramatica.delete("PUNTO_COMA",
+                20, " Error sintáctico {}: el punto y coma no está al final de una sentencia [#, %]");
+
+        /* Agrupación de sentencias */
+        gramatica.group("SENTENCIAS", "(VARIABLE_PC | FUNCION_COMP_PC)+");
+        /* Estructuras de control completas */
+        gramatica.loopForFunExecUntilChangeNotDetected(() -> {
+            gramatica.group("EST_CONTROL_COMP_LASLC", "EST_CONTROL_COMP LLAVE_O (SENTENCIAS)? LLAVE_C", true);
+            gramatica.group("SENTENCIAS", "(SENTENCIAS | EST_CONTROL_COMP_LASLC)+");
+        });
+
+        /* Estructuras de control incompletas */
+        gramatica.loopForFunExecUntilChangeNotDetected(() -> {
+            gramatica.initialLineColumn();
+
+            gramatica.group("EST_CONTROL_COMP_LASLC", "EST_CONTROL_COMP (SENTENCIAS)? LLAVE_C", true,
+                    21, " Error sintáctico {}: falta la llave que abre en la estructura de control [#, %]");
+
+            gramatica.finalLineColumn();
+
+            gramatica.group("EST_CONTROL_COMP_LASLC", "EST_CONTROL_COMP LLAVE_O SENTENCIAS",
+                    22, " Error sintáctico {}: falta la llave que cierra en la estructura de control [#, %]");
+            gramatica.group("SENTENCIAS", "(SENTENCIAS | EST_CONTROL_COMP_LASLC)+");
+        });
+
+        /* Eliminación de llaves */
+        gramatica.delete(new String[] { "LLAVE_O", "LLAVE_C" },
+                23, " Error sintáctico {}: la llave no está contenida en una agrupación [#, %]");
+
         /* Mostrar gramáticas */
         gramatica.show();
 
     }
 
     private void semanticAnalysis() {
+        HashMap<String, String> identDataType = new HashMap<>();
+        identDataType.put("Color", "COLOR");
+        identDataType.put("numero", "NUMERO");
+
+        for (Production id : identProd) {
+            if (!identDataType.get(id.lexemeRank(0)).equals(id.lexicalCompRank(-1))) {
+                errors.add(new ErrorLSSL(1, "ERROR semantico {}: valor incompatible con tipo de dato [#,%]", id, true));
+            } else if (id.lexicalCompRank(-1).equals("COLOR") && !id.lexemeRank(-1).matches("#[0-9a-fA-F+]")) {
+                errors.add(new ErrorLSSL(2, "ERROR semantico {}: color incompatible [#,%]", id, false));
+            } else {
+                identificadores.put(id.lexemeRank(1), id.lexemeRank(-1));
+            }
+            System.err.println(id.lexemeRank(0, -1));
+            System.err.println(id.lexicalCompRank(0, -1));
+            System.out.println("*");
+        }
     }
 
     private void colorAnalysis() {
